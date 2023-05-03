@@ -16,18 +16,19 @@ Monotonic Derivative is a Python library designed to modify real-life data to en
 To install the Monotonic Derivative library, cloent he repo (soon use pip:)
 
 ```
-pip install monotonic-derivative
+        git clone 
+(soon) pip install monotonic-derivative
 ```
 
 ### Usage
 
-First, import the `modify_y_to_ensure_monotonic_derivative` function from the `monotonic_derivative` module:
+First, import the `ensure_monotonic_derivative` function from the `monotonic_derivative` module:
 
 ```python
-from monotonic_derivative import modify_y_to_ensure_monotonic_derivative
+from monotonic_derivative import ensure_monotonic_derivative
 ```
 
-The primary function of the library, `modify_y_to_ensure_monotonic_derivative`, takes the following arguments:
+The primary function of the library, `ensure_monotonic_derivative`, takes the following arguments:
 
 - `x`: numpy array, the independent variable data points
 - `y`: numpy array, the dependent variable data points
@@ -42,12 +43,12 @@ The function returns a modified numpy array of dependent variable data points (`
 
 ```python
 import numpy as np
-from monotonic_derivative import modify_y_to_ensure_monotonic_derivative
+from monotonic_derivative import ensure_monotonic_derivative
 
 x = np.array([0, 1, 2, 3, 4, 5])
 y = np.array([100, 55, 53, 40, 35, 5])
 
-modified_y_positive = modify_y_to_ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False, verbose=True, save_plot=True)
+modified_y_positive = ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False, verbose=True, save_plot=True)
 ```
 
 ### Real-life Applications
