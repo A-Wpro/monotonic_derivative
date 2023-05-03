@@ -16,7 +16,7 @@ Monotonic Derivative is a Python library designed to modify real-life data to en
 To install the Monotonic Derivative library, cloent he repo (soon use pip:)
 
 ```
-        git clone 
+       git clone https://github.com/A-Wpro/monotonic_derivative.git
 (soon) pip install monotonic-derivative
 ```
 
