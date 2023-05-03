@@ -1,0 +1,9 @@
+LICENSE
+README.md
+setup.py
+monotonic_derivative/monotonic_derivative.py
+monotonic_derivative.egg-info/PKG-INFO
+monotonic_derivative.egg-info/SOURCES.txt
+monotonic_derivative.egg-info/dependency_links.txt
+monotonic_derivative.egg-info/requires.txt
+monotonic_derivative.egg-info/top_level.txt
