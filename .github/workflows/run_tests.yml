@@ -32,7 +32,4 @@ jobs:
 
       - name: Run tests
         run: |
-          ls
-          cd ..
-          ls
-          pytest tests/
+          pytest tests/test.py
