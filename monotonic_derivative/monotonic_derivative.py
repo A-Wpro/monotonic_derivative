@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import imageio
 
-def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False, verbose=False, save_plot=False):
+
+def ensure_monotonic_derivative(
+    x, y, degree=2, force_negative_derivative=False, verbose=False, save_plot=False
+):
     """
     Modify the given data points to ensure that the specified degree derivative of the cubic spline is always monotonically increasing or decreasing.
 
@@ -20,10 +23,9 @@ def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False,
     Returns:
     modified_y: numpy array, the modified dependent variable data points
     """
-    
+
     def objective_function(y, x, y_original):
         return np.sum((y - y_original) ** 2)
-
 
     def constraint_second_derivative_increasing(y, x):
         """
@@ -45,7 +47,6 @@ def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False,
 
         return constraint
 
-
     def constraint_second_derivative_decreasing(y, x):
         """
         Function to create a constraint function to be used in the optimization problem.
@@ -65,20 +66,22 @@ def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False,
             return np.min(-np.diff(y_2nd_derivative))
 
         return constraint
-    
+
     # Check if x and y have the same length
     if len(x) != len(y):
         raise ValueError("x and y must have the same length")
     # Check if the specified degree is valid
     if degree >= len(y) - 1:
-        raise ValueError("Degree must be less than the length of the data minus 1, since we lose one data point for each derivative and need at least two data points")
+        raise ValueError(
+            "Degree must be less than the length of the data minus 1, since we lose one data point for each derivative and need at least two data points"
+        )
 
     # Define the constraint for the optimization problem
     if force_negative_derivative:
-        cons = {'type': 'ineq', 'fun': constraint_second_derivative_decreasing(y, x)}
+        cons = {"type": "ineq", "fun": constraint_second_derivative_decreasing(y, x)}
     else:
-        cons = {'type': 'ineq', 'fun': constraint_second_derivative_increasing(y, x)}
-    
+        cons = {"type": "ineq", "fun": constraint_second_derivative_increasing(y, x)}
+
     # Solve the optimization problem
     res = minimize(objective_function, y, args=(x, y), constraints=cons)
     modified_y = res.x
@@ -105,8 +108,18 @@ def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False,
 
         # Plot derivatives from 1st to the specified degree
         for d, ax_i in enumerate(ax[1:], start=1):
-            ax_i.plot(x[:-d], np.diff(y, n=d) / np.prod([np.diff(x) for _ in range(d)]), "o--", label=f"{d}th derivative (original)")
-            ax_i.plot(x[:-d], np.diff(modified_y, n=d) / np.prod([np.diff(x) for _ in range(d)]), "o--", label=f"{d}th derivative (modified)")
+            ax_i.plot(
+                x[:-d],
+                np.diff(y, n=d) / np.prod([np.diff(x) for _ in range(d)]),
+                "o--",
+                label=f"{d}th derivative (original)",
+            )
+            ax_i.plot(
+                x[:-d],
+                np.diff(modified_y, n=d) / np.prod([np.diff(x) for _ in range(d)]),
+                "o--",
+                label=f"{d}th derivative (modified)",
+            )
             ax_i.set_xlabel("x")
             ax_i.set_ylabel(f"{d}th derivative")
             ax_i.legend()
@@ -121,6 +134,5 @@ def ensure_monotonic_derivative(x, y, degree=2, force_negative_derivative=False,
 
         # Save the image as a png
         imageio.imwrite("derivative.png", image)
-
 
     return modified_y
