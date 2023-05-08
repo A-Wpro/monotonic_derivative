@@ -93,8 +93,8 @@ The function returns the best individual (smoothed curve) found by the genetic a
 import numpy as np
 from monotonic_derivative.curve_smoothing import  curve_smoothing
 
-points = np.array([10, 55, 53, 40, 35, 5])
-best_individual = genetic_algorithm(points, alpha=0.5,save_plots = True)
+points = np.array([125, 55, 53, 40, 35, -25])
+best_individual = curve_smoothing(points, alpha=0.5,save_plots = True)
 #best_individual is the smoothed curve
 ```
 
