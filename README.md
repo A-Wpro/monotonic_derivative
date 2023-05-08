@@ -21,6 +21,8 @@ pip install monotonic-derivative
 
 ### Usage
 
+#### Derivative tool:
+
 First, import the `ensure_monotonic_derivative` function from the `monotonic_derivative` module:
 
 ```python
@@ -38,7 +40,7 @@ The primary function of the library, `ensure_monotonic_derivative`, takes the fo
 
 The function returns a modified numpy array of dependent variable data points (`modified_y`) that satisfy the specified monotonicity constraints.
 
-### Example
+#### Example
 
 ```python
 import numpy as np
@@ -65,6 +67,42 @@ modified_y = [99.78638543 56.7089208  48.94131484 44.05868538 33.29107987  5.213
 As you can see, slight change on y can totaly change how react the 2rd derivate.
 
 ![Derivative Example](./images/derivative.png)
+
+#### Genetic algorithm smoothing tool:
+
+```python
+### Test for curve smoothing with genetic algo
+from monotonic_derivative.curve_smoothing import  curve_smoothing
+```
+
+The primary function of the library, `curve_smoothing`, takes the following arguments:
+
+- `points`: numpy array, an array of Y-coordinates representing the original curve
+- `population_size`: int, the number of individuals in the population (default: 100)
+- `num_generations`: int, the number of generations to run the algorithm (default: 1000)
+- `mutation_rate`: float, the probability of a mutation occurring during reproduction (default: 0.1)
+- `alpha`: float, the trade-off between smoothness and similarity to the original curve (default: 0.5)
+- `save_plots`: bool, whether to save the progress of the algorithm as a GIF (default: False)
+- `output_folder`: str, the folder to save the progress GIF if `save_plots` is True (default: "output")
+
+The function returns the best individual (smoothed curve) found by the genetic algorithm as a numpy array.
+
+#### Example
+
+```python
+import numpy as np
+from monotonic_derivative.curve_smoothing import  curve_smoothing
+
+points = np.array([10, 55, 53, 40, 35, 5])
+best_individual = genetic_algorithm(points, alpha=0.5,save_plots = True)
+#best_individual is the smoothed curve
+```
+
+#### Result :
+
+This gif show how the genetic algorithm worked :
+
+![Derivative Example](./images/progress.gif)
 
 ### Real-life Applications
 
