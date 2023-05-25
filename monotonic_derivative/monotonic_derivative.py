@@ -142,11 +142,14 @@ def ensure_monotonic_derivative(
     # Check if x and y have the same length
     if len(x) != len(y):
         raise ValueError("x and y must have the same length")
+
     # Check if the specified degree is valid
     if degree >= len(y) - 1:
         raise ValueError(
             "Degree must be less than the length of the data minus 1, since we lose one data point for each derivative and need at least two data points"
         )
+    if degree < 0:
+        raise ValueError("The degree parameter cannot be negative")
 
     # Define the constraint for the optimization problem
     if force_negative_derivative:

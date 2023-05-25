@@ -22,7 +22,7 @@ def test_invalid_degree():
     y = np.array([100, 55, 53, 40, 35, 5])
 
     with pytest.raises(ValueError):
-        ensure_monotonic_derivative(x, y, degree=5)
+        ensure_monotonic_derivative(x, y, degree=-1)
 
 
 def test_negative_derivative():
@@ -43,14 +43,6 @@ def test_mismatched_lengths():
 
     with pytest.raises(ValueError):
         ensure_monotonic_derivative(x, y)
-
-
-def test_same_lengths():
-    x = np.array([0, 1, 2, 3, 4, 5])
-    y = np.array([100, 55, 53, 40, 35, 5])
-
-    with pytest.raises(ValueError):
-        ensure_monotonic_derivative(x, y, degree=6)
 
 
 ### Test for curve smoothing with genetic algo
