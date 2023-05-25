@@ -16,8 +16,17 @@ y_ensure = ensure_monotonic_derivative(
     verbose=True,
     save_plot=True,
 )
-print(y_ensure)
 y_smooth = curve_smoothing(
-    y_ensure, population_size=100, num_generations=1000, alpha=0.5, save_plots=True
+    y_ensure, population_size=100, num_generations=1000, alpha=0.7, save_plots=True
 )
-print(y_smooth)
+print("smooth", y_smooth)
+"""
+y_ensure2 = ensure_monotonic_derivative(
+    x=np.arange(len(y_smooth)),
+    y=y_smooth,
+    degree=2,
+    force_negative_derivative=True,
+    verbose=True,
+    save_plot=True,
+)
+"""

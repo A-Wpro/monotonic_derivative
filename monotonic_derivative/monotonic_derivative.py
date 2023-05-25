@@ -21,9 +21,11 @@ def extend_data(x, y, dx=0.1, dy=0.1, force_negative_derivative=False):
     x_extended: numpy array, the extended x data points
     y_extended: numpy array, the extended y data points
     """
-    x_extended = np.insert(x, 0, x[0] - dx)
+    x = np.insert(x, 0, x[0] - dx)
+    x_extended = np.insert(x, len(x), x[-1] + dx)
+    y = np.insert(y, 0, y[0] - dy if not force_negative_derivative else y[0] + dy)
     y_extended = np.insert(
-        y, 0, y[0] - dy if not force_negative_derivative else y[0] + dy
+        y, len(y), y[-1] - dy if not force_negative_derivative else y[-1] + dy
     )
 
     return x_extended, y_extended
@@ -179,9 +181,9 @@ def ensure_monotonic_derivative(
         # if optimization is successful and the termination condition is not 'xtol', break the loop
         if res.success and "xtol" not in res.message:
             break
-    y = y[1:]  # to remove 1st fake dot
-    modified_y = res.x[1:] if res else y
-    x = x[1:]
+    y = y[1:-1]  # to remove 1st fake dot and last
+    modified_y = res.x[1:-1] if res else y
+    x = x[1:-1]
     if verbose:
         print("Original y    :", y)
         print("Modified y    :", modified_y)
