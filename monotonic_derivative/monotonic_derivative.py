@@ -4,31 +4,48 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from io import BytesIO
 import imageio
+from scipy.interpolate import interp1d
 
 
 def extend_data(x, y, dx=0.1, dy=0.1, force_negative_derivative=False):
     """
-    Add a new data point before the first point in the dataset.
+    Add a new data point before the first point and after the last point in the dataset.
 
     Parameters:
     x: numpy array, the independent variable data points
     y: numpy array, the dependent variable data points
-    dx: float, the distance between the new data point and the first data point in x
-    dy: float, the distance between the new data point and the first data point in y
+    dx: float, the distance between the new data point and the first/last data point in x
+    dy: float, the distance between the new data point and the first/last data point in y
     force_negative_derivative: bool, force the specified degree derivative to be monotonically decreasing if True
 
     Returns:
     x_extended: numpy array, the extended x data points
     y_extended: numpy array, the extended y data points
     """
-    x = np.insert(x, 0, x[0] - dx)
-    x_extended = np.insert(x, len(x), x[-1] + dx)
-    y = np.insert(y, 0, y[0] - dy if not force_negative_derivative else y[0] + dy)
-    y_extended = np.insert(
-        y, len(y), y[-1] - dy if not force_negative_derivative else y[-1] + dy
+    x_extended = np.concatenate(([x[0] - dx], x, [x[-1] + dx]))
+    y_extended = np.concatenate(
+        (
+            [y[0] * (1 - dy) if not force_negative_derivative else y[0] * (1 + dy)],
+            y,
+            [y[-1] * (1 - dy) if not force_negative_derivative else y[-1] * (1 + dy)],
+        )
     )
 
     return x_extended, y_extended
+
+
+def calculate_similarity(curve1, curve2):
+    # Interpolate curve2 to have the same length as curve1
+    f = interp1d(np.arange(len(curve2)), curve2)
+    curve2_interp = f(np.linspace(0, len(curve2) - 1, len(curve1)))
+
+    # Calculate correlation coefficient
+    correlation = np.corrcoef(curve1, curve2_interp)[0, 1]
+
+    # Convert correlation coefficient to similarity score
+    similarity = (correlation + 1) / 2
+
+    return similarity
 
 
 def ensure_monotonic_derivative(
@@ -38,8 +55,9 @@ def ensure_monotonic_derivative(
     force_negative_derivative=False,
     verbose=False,
     save_plot=False,
-    use_interpolated_data=False,
     max_iter_minimize=50000,
+    use_interpolated_data=False,  # Should not be use, except you know what you do
+    extending_data=False,  # Should not be use, except you know what you do
 ):
     """
     Modify the given data points to ensure that the specified degree derivative of the cubic spline is always monotonically increasing or decreasing.
@@ -59,28 +77,149 @@ def ensure_monotonic_derivative(
     modified_y: numpy array, the modified dependent variable data points
     """
     # Extend the data with a new point before the first point
-    x, y = extend_data(
-        x, y, dx=1, dy=0, force_negative_derivative=force_negative_derivative
-    )
+    if extending_data:
+        x, y = extend_data(
+            x,
+            y,
+            dx=(sum(x) / len(x)),
+            dy=0.05,
+            force_negative_derivative=force_negative_derivative,
+        )  ## TODO, add dy,dx as value that can change to force the monotinic value, bad idea ?
 
-    def objective_function(y, x, y_original):
-        # This is the original objective
+    def objective_function(y, x, y_original, force_negative_derivative, degree):
+        cs = CubicSpline(x, y)
+        # y_degree_th_derivative = cs(x, degree)
+        # y_degree_th_minus_one_derivative = cs(x, degree - 1)
+        penalty = 0
+        penalty_wip = False
+        if force_negative_derivative:
+            if penalty_wip:
+                penalty = np.abs(
+                    len(y_degree_th_derivative[y_degree_th_derivative > 0]) ** 2
+                )
+                penalty = penalty + (
+                    np.sum(  # (f"Difference between {array[i]} and {array[i+1]}: {difference}")
+                        y_degree_th_derivative[:-1][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] > 0,
+                                y_degree_th_derivative[1:] < 0,
+                            )
+                        ]
+                        - y_degree_th_derivative[1:][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] > 0,
+                                y_degree_th_derivative[1:] < 0,
+                            )
+                        ]
+                    )
+                )
+                penalty = penalty + np.abs(
+                    np.sum(
+                        y_degree_th_derivative[:-1][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] < 0,
+                                y_degree_th_derivative[1:] > 0,
+                            )
+                        ]
+                        - y_degree_th_derivative[1:][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] < 0,
+                                y_degree_th_derivative[1:] > 0,
+                            )
+                        ]
+                    )
+                )
+                penalty = int(
+                    penalty
+                    * (
+                        1
+                        + (
+                            np.sum(y_degree_th_derivative > 0)
+                            / len(y_degree_th_derivative)
+                        )
+                    )
+                )
+                penalty = penalty * int(
+                    1
+                    + np.sum(
+                        y_degree_th_minus_one_derivative[:-1]
+                        < y_degree_th_minus_one_derivative[1:]
+                    )
+                    / len(y_degree_th_minus_one_derivative)
+                )
+
+        else:
+            if penalty_wip:
+                penalty = np.abs(
+                    len(y_degree_th_derivative[y_degree_th_derivative < 0]) ** 2
+                )
+                penalty = (
+                    penalty
+                    + np.sum(  # (f"Difference between {array[i]} and {array[i+1]}: {difference}")
+                        y_degree_th_derivative[:-1][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] > 0,
+                                y_degree_th_derivative[1:] < 0,
+                            )
+                        ]
+                        - y_degree_th_derivative[1:][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] > 0,
+                                y_degree_th_derivative[1:] < 0,
+                            )
+                        ]
+                    )
+                )
+
+                penalty = penalty + np.abs(
+                    np.sum(
+                        y_degree_th_derivative[:-1][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] < 0,
+                                y_degree_th_derivative[1:] > 0,
+                            )
+                        ]
+                        - y_degree_th_derivative[1:][
+                            np.logical_and(
+                                y_degree_th_derivative[:-1] < 0,
+                                y_degree_th_derivative[1:] > 0,
+                            )
+                        ]
+                    )
+                )
+                penalty = int(
+                    penalty
+                    * (
+                        1
+                        + (
+                            np.sum(y_degree_th_derivative < 0)
+                            / len(y_degree_th_derivative)
+                        )
+                    )
+                )
+                penalty = penalty * int(
+                    1
+                    + np.sum(
+                        y_degree_th_minus_one_derivative[:-1]
+                        > y_degree_th_minus_one_derivative[1:]
+                    )
+                    / len(y_degree_th_minus_one_derivative)
+                )
+        # penalty = (penalty+ int(1* np.max(np.abs(np.diff(y_degree_th_derivative)))/ (np.max(y_degree_th_derivative) - np.min(y_degree_th_derivative))))
         mse = np.sum((y - y_original) ** 2)
 
-        # This is the penalty term. You can adjust the scale factor (e.g., 1e3)
-        # to make the penalty larger or smaller.
-        # first_point_penalty = 1e3 * max(0, 0.1 - abs(y[0] - y_original[0])) ** 4
+        # We add the penalty term to the MSE
+        return mse + penalty
 
-        return mse  # + first_point_penalty
-
-    def constraint_second_derivative_increasing(y, x):
+    def constraint_degree_derivative_positive(y, x, degree):
         """
         Function to create a constraint function to be used in the optimization problem.
-        The constraint function calculates the minimum difference between consecutive second derivatives.
+        The constraint function checks if all points of the `degree`-th derivative are less than 0.
 
         Parameters:
         y: numpy array, the dependent variable data points
         x: numpy array, the independent variable data points
+        degree: int, the degree of the derivative to check for negativity
 
         Returns:
         constraint: function, the constraint function for the optimization problem
@@ -88,19 +227,21 @@ def ensure_monotonic_derivative(
 
         def constraint(y):
             cs = CubicSpline(x, y)
-            y_2nd_derivative = cs(x, 2)
-            return np.min(np.diff(y_2nd_derivative))
+            x_resampled = np.arange(np.min(x), np.max(x), 0.01)
+            derivative_resampled = cs(x_resampled, degree)
+            return derivative_resampled + 0.01
 
         return constraint
 
-    def constraint_second_derivative_decreasing(y, x):
+    def constraint_degree_derivative_negative(y, x, degree):
         """
         Function to create a constraint function to be used in the optimization problem.
-        The constraint function calculates the maximum difference between consecutive second derivatives.
+        The constraint function checks if all points of the `degree`-th derivative are less than 0.
 
         Parameters:
         y: numpy array, the dependent variable data points
         x: numpy array, the independent variable data points
+        degree: int, the degree of the derivative to check for negativity
 
         Returns:
         constraint: function, the constraint function for the optimization problem
@@ -108,36 +249,62 @@ def ensure_monotonic_derivative(
 
         def constraint(y):
             cs = CubicSpline(x, y)
-            y_2nd_derivative = cs(x, 2)
-            return np.min(-np.diff(y_2nd_derivative))
+            x_resampled = np.arange(np.min(x), np.max(x), 0.01)
+            derivative_resampled = cs(x_resampled, degree)
+            return -derivative_resampled - 1
 
         return constraint
 
-    def interpolate_data(x, y, num_points=1000):
+    def interpolate_data(x, y, num_points_between=1000):
         """
         Create a cubic spline interpolation of the given data points with the specified degree.
+        New points are added between original points, but original points are also kept.
 
         Parameters:
         x: numpy array, the independent variable data points
         y: numpy array, the dependent variable data points
-        num_points: int, the number of points to use for interpolation
+        num_points_between: int, the number of points to interpolate between each original pair of points
 
         Returns:
         x_new: numpy array, the new x values used for interpolation
         y_new: numpy array, the new y values obtained from interpolation
         """
-        cs = CubicSpline(x, y, bc_type="natural")
 
-        x_new = np.linspace(x[0], x[-1], num_points)
-        y_new = cs(x_new)
+        x_new = []
+        y_new = []
+
+        # Iterate over pairs of points in the original data
+        for i in range(len(x) - 1):
+            # Create a cubic spline for this pair of points
+            cs = CubicSpline(x[i : i + 2], y[i : i + 2], bc_type="natural")
+
+            # Generate new x values between this pair of original points
+            x_interp = np.linspace(x[i], x[i + 1], num_points_between + 2)
+
+            # Generate new y values for these x values
+            y_interp = cs(x_interp)
+
+            # Append new values to the list, excluding the last point to avoid duplicates
+            x_new.extend(x_interp[:-1])
+            y_new.extend(y_interp[:-1])
+
+        # Append the last point from the original data
+        x_new.append(x[-1])
+        y_new.append(y[-1])
+
+        # Convert lists to numpy arrays
+        x_new = np.array(x_new)
+        y_new = np.array(y_new)
 
         return x_new, y_new
 
     # Use interpolated data if use_interpolated_data is True
     label_original_point = "Original data points"
     if use_interpolated_data:
+        y_not_intra = y
+        x_not_intra = x
         x, y = interpolate_data(x, y, len(y) + degree)
-        label_original_point = "Original extrapoled data points"
+        label_original_point_intra = "Original intrapoled data points"
 
     # Check if x and y have the same length
     if len(x) != len(y):
@@ -153,9 +320,15 @@ def ensure_monotonic_derivative(
 
     # Define the constraint for the optimization problem
     if force_negative_derivative:
-        cons = {"type": "ineq", "fun": constraint_second_derivative_decreasing(y, x)}
+        cons = {
+            "type": "ineq",
+            "fun": constraint_degree_derivative_negative(y, x, degree),
+        }
     else:
-        cons = {"type": "ineq", "fun": constraint_second_derivative_increasing(y, x)}
+        cons = {
+            "type": "ineq",
+            "fun": constraint_degree_derivative_positive(y, x, degree),
+        }
 
     # Solve the optimization problem
     # List of methods to try
@@ -163,7 +336,6 @@ def ensure_monotonic_derivative(
         "SLSQP",
         "CG",
         "BFGS",
-        "Newton-CG",
         "L-BFGS-B",
         "TNC",
         "COBYLA",
@@ -176,7 +348,7 @@ def ensure_monotonic_derivative(
         res = minimize(
             objective_function,
             y,
-            args=(x, y),
+            args=(x, y, force_negative_derivative, degree),
             constraints=cons,
             method=method,
             options={"maxiter": max_iter_minimize},
@@ -184,12 +356,28 @@ def ensure_monotonic_derivative(
         # if optimization is successful and the termination condition is not 'xtol', break the loop
         if res.success and "xtol" not in res.message:
             break
-    y = y[1:-1]  # to remove 1st fake dot and last
-    modified_y = res.x[1:-1] if res else y
-    x = x[1:-1]
+    if extending_data:
+        y = y[0:-1]  # to remove 1st fake dot and last
+        modified_y = res.x[0:-1] if res else y
+        x = x[0:-1]
+    else:
+        modified_y = res.x if res else y
+
     if verbose:
-        print("Original y    :", y)
-        print("Modified y    :", modified_y)
+        if use_interpolated_data:
+            print("Original y    :", y_not_intra)
+            print("Original intrapoled y    :", y)
+            print("Modified y    :", modified_y)
+            similarity_score_intra = calculate_similarity(modified_y, y)
+            similarity_score = calculate_similarity(modified_y, y_not_intra)
+            print("Similarity score intrapoled:", similarity_score_intra)
+            print("Similarity score :", similarity_score)
+        else:
+            similarity_score = calculate_similarity(modified_y, y)
+            print("Original y    :", y)
+            print("Modified y    :", modified_y)
+            print("Similarity score :", similarity_score)
+
         print("Optimization success:", res.success)
         print("Optimization message:", res.message)
 
@@ -198,8 +386,13 @@ def ensure_monotonic_derivative(
         fig, ax = plt.subplots(degree + 1, 1, figsize=(8, 3 * (degree + 1)))
 
         # Plot the original and modified data points
-        ax[0].plot(x, y, "o--", label=label_original_point)
-        ax[0].plot(x, modified_y, "o--", label="Modified data points")
+
+        if use_interpolated_data:
+            ax[0].plot(x, y, "b-", label=label_original_point_intra)
+            ax[0].plot(x_not_intra, y_not_intra, "m-", label=label_original_point)
+        else:
+            ax[0].plot(x, y, "b-", label=label_original_point)
+        ax[0].plot(x, modified_y, "g-", label="Modified data points")
         ax[0].set_xlabel("x")
         ax[0].set_ylabel("y")
         ax[0].legend()
@@ -209,16 +402,17 @@ def ensure_monotonic_derivative(
 
         # Plot derivatives from 1st to the specified degree
         for d, ax_i in enumerate(ax[1:], start=1):
+            # Compute the Xth derivative
+            y_first_derivative = cs_original(x, d)
+            y_smoothed_first_derivative = cs_modified(x, d)
             ax_i.plot(
-                x[:-d],
-                np.diff(y, n=d) / np.prod([np.diff(x) for _ in range(d)]),
-                "o--",
+                x,
+                y_first_derivative,
                 label=f"{d}th derivative (original)",
             )
             ax_i.plot(
-                x[:-d],
-                np.diff(modified_y, n=d) / np.prod([np.diff(x) for _ in range(d)]),
-                "o--",
+                x,
+                y_smoothed_first_derivative,
                 label=f"{d}th derivative (modified)",
             )
             ax_i.set_xlabel("x")
