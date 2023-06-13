@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import imageio
 from scipy.interpolate import interp1d
+from scipy.interpolate import PchipInterpolator
 
 
 def extend_data(x, y, dx=0.1, dy=0.1, force_negative_derivative=False):
@@ -48,6 +49,21 @@ def calculate_similarity(curve1, curve2):
     return similarity
 
 
+def interpolated_curve(x, y, step=0.01):
+    # Create a cubic spline interpolation
+    interp = PchipInterpolator(x, y, extrapolate=True)
+
+    # Control 2 decimals for GL
+    x_pchip_original = np.arange(
+        round(float(x.min()), 2),
+        round(float(x.max()), 2) + step,
+        step,
+    )
+    y_pchip_original = interp(x_pchip_original)
+
+    return x_pchip_original,y_pchip_original
+
+
 def ensure_monotonic_derivative(
     x,
     y,
@@ -56,6 +72,7 @@ def ensure_monotonic_derivative(
     verbose=False,
     save_plot=False,
     max_iter_minimize=50000,
+    return_interpolated_curve=False,
     use_interpolated_data=False,  # Should not be use, except you know what you do
     extending_data=False,  # Should not be use, except you know what you do
 ):
@@ -69,9 +86,10 @@ def ensure_monotonic_derivative(
     force_negative_derivative: bool, force the specified degree derivative to be monotonically decreasing if True
     verbose: bool, print additional information if True
     save_plot: bool, save the plots as GIF images if True
-    use_interpolated_data: bool, use interpolated data points instead of the original ones if True
     max_iter_minimize: int, maximum number of iterations for the optimization method
-    num_points: int, the number of points to use for interpolation if use_interpolated_data is True
+    return_interpolated_curve : bool, instead of return the modified y alone we return a tuple of interpolated array.
+    use_interpolated_data: bool, use interpolated data points instead of the original ones if True # Should not be use, except you know what you do
+    extending_data: bool, create new data point before our data and after  # Should not be use, except you know what you do
 
     Returns:
     modified_y: numpy array, the modified dependent variable data points
@@ -112,9 +130,7 @@ def ensure_monotonic_derivative(
             cs = CubicSpline(x, y)
             x_resampled = np.arange(np.min(x), np.max(x), 0.01)
             derivative_resampled = cs(x_resampled, degree)
-            return (
-                derivative_resampled + 0.01
-            )  # 0.01 instead of 0 to avoid critic state problem and other calculation problem
+            return derivative_resampled  # 0.01 instead of 0 to avoid critic state problem and other calculation problem
 
         return constraint
 
@@ -136,7 +152,7 @@ def ensure_monotonic_derivative(
             cs = CubicSpline(x, y)
             x_resampled = np.arange(np.min(x), np.max(x), 0.01)
             derivative_resampled = cs(x_resampled, degree)
-            return -derivative_resampled - 1
+            return -derivative_resampled
 
         return constraint
 
@@ -317,4 +333,6 @@ def ensure_monotonic_derivative(
         # Save the image as a png
         imageio.imwrite("derivative.png", image)
 
+    if return_interpolated_curve:
+        return interpolated_curve(x, modified_y)
     return modified_y

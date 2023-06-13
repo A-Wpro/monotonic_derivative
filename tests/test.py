@@ -3,6 +3,7 @@ import pytest
 
 ### Test for monotonic derivative smoothing
 from monotonic_derivative import ensure_monotonic_derivative
+from scipy.interpolate import CubicSpline
 
 
 def test_basic_usage():
@@ -10,11 +11,16 @@ def test_basic_usage():
     y = np.array([100, 55, 53, 40, 35, 5])
     d = 2
     modified_y = ensure_monotonic_derivative(
-        x, y, degree=d, force_negative_derivative=False, verbose=False, save_plot=False
+        x, y, degree=d, force_negative_derivative=False, verbose=True, save_plot=False
     )
     assert len(modified_y) == len(y)
-    d2nd = np.diff(modified_y, n=d) / np.prod([np.diff(x) for _ in range(d)])
-    assert all(d2nd[i] <= d2nd[i + 1] for i in range(len(d2nd) - 1))
+    cs = CubicSpline(x, modified_y)
+    y_original_Xst_derivative = cs(x, d)
+    print(y_original_Xst_derivative)
+    assert all(
+        y_original_Xst_derivative[i] >= 0
+        for i in range(len(y_original_Xst_derivative) - 1)
+    )
 
 
 def test_invalid_degree():
@@ -33,8 +39,12 @@ def test_negative_derivative():
         x, y, degree=d, force_negative_derivative=True, verbose=False, save_plot=False
     )
     assert len(modified_y) == len(y)
-    d2nd = np.diff(modified_y, n=d) / np.prod([np.diff(x) for _ in range(d)])
-    assert all(d2nd[i] >= d2nd[i + 1] for i in range(len(d2nd) - 1))
+    cs = CubicSpline(x, modified_y)
+    y_original_1st_derivative = cs(x, d)
+    assert all(
+        y_original_1st_derivative[i] <= 0
+        for i in range(len(y_original_1st_derivative) - 1)
+    )
 
 
 def test_mismatched_lengths():
