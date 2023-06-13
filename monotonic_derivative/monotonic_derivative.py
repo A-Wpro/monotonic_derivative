@@ -61,7 +61,7 @@ def interpolated_curve(x, y, step=0.01):
     )
     y_pchip_original = interp(x_pchip_original)
 
-    return x_pchip_original,y_pchip_original
+    return x_pchip_original, y_pchip_original
 
 
 def ensure_monotonic_derivative(
@@ -130,7 +130,9 @@ def ensure_monotonic_derivative(
             cs = CubicSpline(x, y)
             x_resampled = np.arange(np.min(x), np.max(x), 0.01)
             derivative_resampled = cs(x_resampled, degree)
-            return derivative_resampled  # 0.01 instead of 0 to avoid critic state problem and other calculation problem
+            return (
+                derivative_resampled - 0.00000000001
+            )  # 0.00000000001 instead of 0 to avoid critic state problem and other calculation problem
 
         return constraint
 
@@ -152,7 +154,9 @@ def ensure_monotonic_derivative(
             cs = CubicSpline(x, y)
             x_resampled = np.arange(np.min(x), np.max(x), 0.01)
             derivative_resampled = cs(x_resampled, degree)
-            return -derivative_resampled
+            return (
+                -derivative_resampled - 0.00000000001
+            )  # 0.00000000001 instead of 0 to avoid critic state problem and other calculation problem
 
         return constraint
 
