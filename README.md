@@ -46,11 +46,17 @@ The function returns a modified numpy array of dependent variable data points (`
 import numpy as np
 from monotonic_derivative import ensure_monotonic_derivative
 
-x = np.array([0, 1, 2, 3, 4, 5])
-y = np.array([100, 55, 53, 40, 35, 5])
+y = np.array([289.624, 430.174, 437.31, 434.67, 427.255, 408.902, 379.064])
+x = np.array([0.078, 1.298, 2.791, 4.65, 6.002, 7.747, 10.0])
 
 modified_y = ensure_monotonic_derivative(
-    x, y, degree=2, force_negative_derivative=True, verbose=True, save_plot=True)
+    x=x,
+    y=y,
+    degree=3, 
+    force_negative_derivative=False,
+    verbose=True,
+    save_plot=True,
+)
 ```
 
 #### Result :
@@ -58,15 +64,19 @@ modified_y = ensure_monotonic_derivative(
 We got a new curve that follow one rule : The Xth degree (depending of paramter degree) derivate must be increasing/decreasing (depending of force_negative_derivative parameter) curve.
 
 ```
-#from
-y = [100, 55, 53, 40, 35, 5]
-#to
-modified_y = [99.78638543 56.7089208  48.94131484 44.05868538 33.29107987  5.21361543]
+Original y    : [289.624 430.174 437.31  434.67  427.255 408.902 379.064]
+Modified y    : [290.6626736  423.94170784 445.4551795  434.69854619 424.27831859 407.55132434 380.41124237]
+Similarity score : 0.9982442661935377 
+Optimization success: True
+Optimization message: Optimization terminated successfully
 ```
 
-As you can see, slight change on y can totaly change how react the 2rd derivate.
+As you can see, big change on 3rd derivate have small impact of the 1st derivate curve but force it to be monotonicaly decreasing. 
 
 ![Derivative Example](./images/derivative.png)
+
+Obvisouly and depending of which degree to lock below or above 0 you can force a curve to be closer to their mathematical reality.
+
 
 #### Genetic algorithm smoothing tool:
 
@@ -91,7 +101,7 @@ The function returns the best individual (smoothed curve) found by the genetic a
 
 ```python
 import numpy as np
-from monotonic_derivative.curve_smoothing import  curve_smoothing
+from monotonic_derivative.curve_smoothing import curve_smoothing
 
 points = np.array([125, 55, 53, 40, 35, -25])
 best_individual = curve_smoothing(points, alpha=0.5,save_plots = True)
@@ -108,7 +118,7 @@ This gif show how the genetic algorithm worked :
 
 In many real-life scenarios, the collected data may produce curves that are not logical or do not follow the expected constraints. For example, the data representing the velocity of a car over time should show an increasing or decreasing acceleration, but due to measurement errors or other factors, the collected data points may not reflect this.
 
-The Monotonic Derivative library offers an easy solution to slightly modify the data to respect these constraints. By using this library, you can ensure that the specified degree derivative of the cubic spline is always monotonically increasing or decreasing, making your data analysis more accurate and reliable.
+The Monotonic Derivative library offers an easy solution to slightly modify the data to respect these constraints. By using this library, you can ensure that the specified degree derivative always monotonically increasing or decreasing, by forcing the value of a derivative to be below or above 0, making your data analysis more accurate and reliable.
 
 ### Limit
 
