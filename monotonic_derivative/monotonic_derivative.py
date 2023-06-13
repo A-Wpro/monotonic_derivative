@@ -86,128 +86,11 @@ def ensure_monotonic_derivative(
             force_negative_derivative=force_negative_derivative,
         )  ## TODO, add dy,dx as value that can change to force the monotinic value, bad idea ?
 
-    def objective_function(y, x, y_original, force_negative_derivative, degree):
-        cs = CubicSpline(x, y)
-        # y_degree_th_derivative = cs(x, degree)
-        # y_degree_th_minus_one_derivative = cs(x, degree - 1)
-        penalty = 0
-        penalty_wip = False
-        if force_negative_derivative:
-            if penalty_wip:
-                penalty = np.abs(
-                    len(y_degree_th_derivative[y_degree_th_derivative > 0]) ** 2
-                )
-                penalty = penalty + (
-                    np.sum(  # (f"Difference between {array[i]} and {array[i+1]}: {difference}")
-                        y_degree_th_derivative[:-1][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] > 0,
-                                y_degree_th_derivative[1:] < 0,
-                            )
-                        ]
-                        - y_degree_th_derivative[1:][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] > 0,
-                                y_degree_th_derivative[1:] < 0,
-                            )
-                        ]
-                    )
-                )
-                penalty = penalty + np.abs(
-                    np.sum(
-                        y_degree_th_derivative[:-1][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] < 0,
-                                y_degree_th_derivative[1:] > 0,
-                            )
-                        ]
-                        - y_degree_th_derivative[1:][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] < 0,
-                                y_degree_th_derivative[1:] > 0,
-                            )
-                        ]
-                    )
-                )
-                penalty = int(
-                    penalty
-                    * (
-                        1
-                        + (
-                            np.sum(y_degree_th_derivative > 0)
-                            / len(y_degree_th_derivative)
-                        )
-                    )
-                )
-                penalty = penalty * int(
-                    1
-                    + np.sum(
-                        y_degree_th_minus_one_derivative[:-1]
-                        < y_degree_th_minus_one_derivative[1:]
-                    )
-                    / len(y_degree_th_minus_one_derivative)
-                )
-
-        else:
-            if penalty_wip:
-                penalty = np.abs(
-                    len(y_degree_th_derivative[y_degree_th_derivative < 0]) ** 2
-                )
-                penalty = (
-                    penalty
-                    + np.sum(  # (f"Difference between {array[i]} and {array[i+1]}: {difference}")
-                        y_degree_th_derivative[:-1][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] > 0,
-                                y_degree_th_derivative[1:] < 0,
-                            )
-                        ]
-                        - y_degree_th_derivative[1:][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] > 0,
-                                y_degree_th_derivative[1:] < 0,
-                            )
-                        ]
-                    )
-                )
-
-                penalty = penalty + np.abs(
-                    np.sum(
-                        y_degree_th_derivative[:-1][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] < 0,
-                                y_degree_th_derivative[1:] > 0,
-                            )
-                        ]
-                        - y_degree_th_derivative[1:][
-                            np.logical_and(
-                                y_degree_th_derivative[:-1] < 0,
-                                y_degree_th_derivative[1:] > 0,
-                            )
-                        ]
-                    )
-                )
-                penalty = int(
-                    penalty
-                    * (
-                        1
-                        + (
-                            np.sum(y_degree_th_derivative < 0)
-                            / len(y_degree_th_derivative)
-                        )
-                    )
-                )
-                penalty = penalty * int(
-                    1
-                    + np.sum(
-                        y_degree_th_minus_one_derivative[:-1]
-                        > y_degree_th_minus_one_derivative[1:]
-                    )
-                    / len(y_degree_th_minus_one_derivative)
-                )
-        # penalty = (penalty+ int(1* np.max(np.abs(np.diff(y_degree_th_derivative)))/ (np.max(y_degree_th_derivative) - np.min(y_degree_th_derivative))))
+    def objective_function(
+        y, x, y_original, force_negative_derivative, degree
+    ):  # parameter will be used to modify penalty if needed
+        penalty = 0  # no penalty, it's here for potential futur update
         mse = np.sum((y - y_original) ** 2)
-
         # We add the penalty term to the MSE
         return mse + penalty
 
@@ -229,7 +112,9 @@ def ensure_monotonic_derivative(
             cs = CubicSpline(x, y)
             x_resampled = np.arange(np.min(x), np.max(x), 0.01)
             derivative_resampled = cs(x_resampled, degree)
-            return derivative_resampled + 0.01
+            return (
+                derivative_resampled + 0.01
+            )  # 0.01 instead of 0 to avoid critic state problem and other calculation problem
 
         return constraint
 
@@ -255,7 +140,9 @@ def ensure_monotonic_derivative(
 
         return constraint
 
-    def interpolate_data(x, y, num_points_between=1000):
+    def interpolate_data(
+        x, y, num_points_between=1000
+    ):  # should be change very soon and should not be used like this except you know what yo do
         """
         Create a cubic spline interpolation of the given data points with the specified degree.
         New points are added between original points, but original points are also kept.
