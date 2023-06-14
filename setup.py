@@ -7,7 +7,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="monotonic derivative",
-    version="0.8",
+    version="0.9",
     description="Monotonic Derivative is a Python library designed to modify real-life data to ensure that the specified degree derivative of the cubic spline is always monotonically increasing or decreasing. How ? thanks to it's derivative ! There is also a genetic base curve smoothing tool with several parameter to suit your needs, This library can be particularly useful in applications where the derivatives of the given data must follow specific constraints, such as in scientific modeling/engineering applications.",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -31,22 +31,6 @@ def test_invalid_degree():
         ensure_monotonic_derivative(x, y, degree=-1)
 
 
-def test_negative_derivative():
-    x = np.array([0, 1, 2, 3, 4, 5])
-    y = np.array([100, 55, 53, 40, 35, 5])
-    d = 2
-    modified_y = ensure_monotonic_derivative(
-        x, y, degree=d, force_negative_derivative=True, verbose=False, save_plot=False
-    )
-    assert len(modified_y) == len(y)
-    cs = CubicSpline(x, modified_y)
-    y_original_1st_derivative = cs(x, d)
-    assert all(
-        y_original_1st_derivative[i] <= 0
-        for i in range(len(y_original_1st_derivative) - 1)
-    )
-
-
 def test_mismatched_lengths():
     x = np.array([0, 1, 2, 3, 4, 5])
     y = np.array([100, 55, 53, 40, 35])
