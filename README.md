@@ -18,6 +18,7 @@ To install the Monotonic Derivative library:
 ```
 pip install monotonic-derivative
 ```
+or see : [pipy](https://pypi.org/project/monotonic-derivative/)
 
 ### Usage
 
